@@ -1,68 +1,86 @@
 <template>
-  <div>
-    <Pagination
-      :currentPage="currentPage"
-      :totalPages="totalPages"
-      @update:currentPage="fetchCharacters"
-    />
-    <h1>Rick and Morty Characters</h1>
-    <div class="characters-container">
-      <CharacterCard
-        v-for="character in characters.results"
-        :key="character.id"
-        :character="character"
-      />
-    </div>
-    
+  <div class="home-page">
+    <img src="/logo.png" alt="Logo" class="logo" />
+    <h2 class="subtitle">Rick and Morty API _ TESTAPP</h2>
+    <nav>
+      <ul>
+        <li>
+          <router-link to="/characters">Characters</router-link>
+        </li>
+        <li>
+          <router-link to="/locations">Locations</router-link>
+        </li>
+        <li>
+          <router-link to="/episodes">Episodes</router-link>
+        </li>
+        <li>
+          <router-link to="/extra-memory">Memory Game</router-link>
+        </li>
+      </ul>
+    </nav>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, onMounted, reactive, toRefs } from 'vue';
-import { fetchCharacters as fetchCharactersApi } from '@/api/rickAndMortyApi'; 
-import type { CharacterResponse } from '@/models/Character'; 
-import CharacterCard from '@/components/CharacterCard.vue';
-import Pagination from '@/components/PaginationComp.vue';
-
-export default defineComponent({
-  components: {
-    CharacterCard,
-    Pagination,
-  },
-  setup() {
-    const state = reactive({
-      characters: {} as CharacterResponse,
-      currentPage: 1,
-      totalPages: 0,
-    });
-
-    async function fetchCharacters(page: number = state.currentPage) {
-      try {
-        const response = await fetchCharactersApi(page);
-        state.characters = response;
-        state.totalPages = response.info.pages;
-        state.currentPage = page;
-      } catch (error) {
-        console.error("Failed to fetch characters:", error);
-      }
-    }
-
-    onMounted(() => {
-      fetchCharacters();
-    });
-
-    return { ...toRefs(state), fetchCharacters };
-  },
-});
+<script setup>
+// No JavaScript needed for this component unless you want to add more interactivity
 </script>
 
-<style scoped>
-.characters-container {
+<style scoped lang="scss">
+.home-page {
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-}
+  min-height: 100vh;
+  background-color: #f0f0f0;
+  text-align: center;
 
-/* Additional styling can go here */
+  .logo {
+    max-width: 80%; // Adjust based on your logo size
+  }
+
+  .subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 3rem;
+    color: #333;
+    font-weight: bold;
+  }
+
+  nav {
+    ul {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem; // Space between each link/button
+
+      li {
+        width: 100%; // Full width buttons
+        max-width: 320px; // Max button width for larger screens
+
+        a {
+          display: block;
+          background-color: #6200ea; // A vibrant, modern color
+          color: #ffffff;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 5px; // Slightly rounded corners for a modern look
+          text-decoration: none;
+          font-size: 1rem;
+          font-weight: bold;
+          transition:
+            background-color 0.3s,
+            transform 0.2s;
+
+          &:hover,
+          &:focus {
+            background-color: #3700b3; // Darker shade for interaction
+            transform: translateY(-3px); // Lift effect
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); // Subtle shadow for depth
+          }
+        }
+      }
+    }
+  }
+}
 </style>
