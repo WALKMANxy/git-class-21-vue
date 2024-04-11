@@ -1,19 +1,21 @@
 <template>
   <div>
-    <!-- Pagination Controls -->
+    <!-- Renders pagination controls, binding currentPage and totalPages from the script setup. -->
+    <!-- @update:currentPage listens for the custom event emitted by the Pagination component to update the currentPage. -->
     <Pagination
       :currentPage="currentPage"
       :totalPages="totalPages"
-      @update:currentPage="page => fetchApiData(page, searchQuery)"
+      @update:currentPage="(page) => fetchApiData(page, searchQuery)"
     />
-    
-    <!-- Loading Indicator -->
+
+    <!-- Shows a loading message while data is being fetched. -->
     <div v-if="isLoading">Loading...</div>
-    
-    <!-- Error Message Display -->
+
+    <!-- Shows an error message if one occurred during data fetching. -->
     <div v-else-if="errorMessage" class="error-message">{{ errorMessage }}</div>
-    
-    <!-- Characters Display -->
+
+    <!-- Renders a list of CharacterCard components if data is loaded successfully and no error occurred. -->
+    <!-- Uses optional chaining (?.) to safely access the results array from the data object. -->
     <div v-else class="characters-container">
       <CharacterCard
         v-for="character in data?.results"
@@ -24,64 +26,47 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, onMounted, reactive, toRefs, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { fetchCharacters as fetchCharactersApi } from '@/api/rickAndMortyApi';
-import type { CharacterResponse } from '@/models/Character';
-import CharacterCard from '@/components/CharacterCard.vue';
-import Pagination from '@/components/PaginationComp.vue';
+<script setup lang="ts">
+// Importing Vue Composition API functions and the Vue Router's useRoute function.
+import { onMounted, watch, ref, computed } from "vue";
+import { useRoute } from "vue-router";
 
-export default defineComponent({
-  components: {
-    CharacterCard,
-    Pagination,
-  },
-  setup() {
-    const state = reactive({
-      characters: {} as CharacterResponse,
-      currentPage: 1,
-      totalPages: 0,
-      errorMessage: '', // Include an error message state
-    });
+// Importing the custom composable function and components.
+import { useRickAndMortyApi } from "@/composables/useRickAndMortyApi";
+import CharacterCard from "@/components/CharacterCard.vue";
+import Pagination from "@/components/PaginationComp.vue";
 
-    const route = useRoute();
+// Using the Vue Router's useRoute function to access the current route object.
+const route = useRoute();
 
-    async function fetchCharacters(page: number = state.currentPage, searchQuery?: string) {
-      try {
-        const response = await fetchCharactersApi(page, searchQuery);
-        if (response === 'NOT_FOUND') {
-          state.characters = { results: [] }; // Adjust as needed
-          state.totalPages = 0;
-          state.errorMessage = 'No item found with that name!';
-        } else {
-          state.characters = response;
-          state.totalPages = response.info?.pages || 0;
-          state.errorMessage = ''; // Reset error message on successful fetch
-        }
-        state.currentPage = page;
-      } catch (error: unknown) {
-        console.error("Failed to fetch characters:", error);
-        if (error instanceof Error) {
-      state.errorMessage = error.message;
-    } else {
-      state.errorMessage = 'An unexpected error occurred';
-    }
-  }
-}
+// Initializing the custom composable to fetch character data from the Rick and Morty API.
+const { data, errorMessage, isLoading, fetchApiData } = useRickAndMortyApi(
+  "https://rickandmortyapi.com/api/character"
+);
 
-    // Trigger fetch on mount and when route.query.search changes
-    onMounted(() => {
-      fetchCharacters(state.currentPage, route.query.search as string);
-    });
+// A reactive reference for storing the current search query.
+const searchQuery = ref("");
 
-    watch(() => route.query.search, (newSearchQuery) => {
-      fetchCharacters(state.currentPage, newSearchQuery as string);
-    });
-
-    return { ...toRefs(state), fetchCharacters };
-  },
+// Fetching character data when the component is mounted.
+onMounted(() => {
+  fetchApiData(1, searchQuery.value);
 });
+
+// Watching for changes in the search query parameter in the URL.
+// When it changes, the searchQuery ref is updated, and new character data is fetched based on the new search query.
+watch(
+  () => route.query.search,
+  (newSearchQuery) => {
+    searchQuery.value = newSearchQuery as string;
+    fetchApiData(1, searchQuery.value);
+  }
+);
+
+// Pagination controls: currentPage is a reactive reference to track the current page.
+const currentPage = ref(1);
+// totalPages is a computed property that derives its value from the pages information in the fetched data.
+// If data.value?.info?.pages is undefined, it defaults to 0.
+const totalPages = computed(() => data.value?.info?.pages || 0);
 </script>
 
 <style scoped>
